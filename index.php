@@ -37,39 +37,39 @@
     }
     else {
       $table = $_POST['table'];
+      $type = $_POST['type'];
       $sqlTable = "SELECT * FROM ".$table;
       $tableResult = $conn->query($sqlTable);
       $tableLength = mysqli_num_rows($tableResult);
-      //$indexList = array(rand(1,$tableLength),rand(1,$tableLength),rand(1,$tableLength),rand(1,$tableLength));
-      $indexList = fillArray($tableLength);
+      
+      if ($type == 'quiz') {
+        $indexList = fillArray($tableLength);
+        $response = array();
+        $stmt = "SELECT * FROM ".$table." WHERE my_row_id =".$indexList[0].";";
+        $stmt .= "SELECT * FROM ".$table." WHERE my_row_id =".$indexList[1].";";
+        $stmt .= "SELECT * FROM ".$table." WHERE my_row_id =".$indexList[2].";";
+        $stmt .= "SELECT * FROM ".$table." WHERE my_row_id =".$indexList[3];
+        if ($conn->multi_query($stmt)) {
+          do {
+            if ($result = $conn->store_result()) {
+              while ($row = $result -> fetch_assoc()) {
+                $response[] = $row;
+              }
+            $result -> free_result();
+            }
+          } while ($conn -> next_result());
+        } 
+      }
+
+      else {
+        $randIndex = rand(1,$tableLength);
+        $stmt = "SELECT * FROM ".$table." WHERE my_row_id =".$randIndex.";";
+        $result = $conn->query($stmt);
+        $row = $result -> fetch_assoc();
+        $response[] = $row;
+        $result -> free_result();
+      }
     }
-
-    $response = array();
-
-    $stmt = "SELECT * FROM ".$table." WHERE my_row_id =".$indexList[0].";";
-    $stmt .= "SELECT * FROM ".$table." WHERE my_row_id =".$indexList[1].";";
-    $stmt .= "SELECT * FROM ".$table." WHERE my_row_id =".$indexList[2].";";
-    $stmt .= "SELECT * FROM ".$table." WHERE my_row_id =".$indexList[3];
-
-    
-    if ($conn->multi_query($stmt)) {
-      do {
-        if ($result = $conn->store_result()) {
-          while ($row = $result -> fetch_assoc()) {
-            $response[] = $row;
-          }
-         $result -> free_result();
-        }
-      } while ($conn -> next_result());
-    } 
- 
-    /**foreach ($indexList as $item) {
-      $stmt = "SELECT * FROM ".$table." WHERE my_row_id =".$item;
-      $result = $conn->query($stmt);
-      $row = $result -> fetch_assoc();
-      $response[] = $row;
-      mysqli_free_result($result);
-    } */
 
     echo json_encode($response);
   }
